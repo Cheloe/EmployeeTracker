@@ -22,21 +22,12 @@ const db = mysql.createConnection(
   console.log(`Connected to the employeeTracker_db database.`),
 );
 
-//TODO: define this and add it to all methods
-function startAgain() {
-  inquirer
-  .prompt ({
-    type: 'confirm',
-    message: 'Start Over?',
-    name: 'startAgain'
-})
-}
-
 const chosenAction = {  
   viewAllDepartments: () => {
       //console.log('Viewing all departments');
       db.query('SELECT * FROM departments', function (err, results) {
           console.table(results);
+          startInquirer();
       });
   },
   viewAllRoles: () => {
@@ -63,7 +54,6 @@ LEFT JOIN
 LEFT JOIN
     employees mm ON m.manager_id = mm.employee_id;
 `;
-
       db.query(employeeQuery, function (err, results) {
         console.table(results);
       });
@@ -148,3 +138,14 @@ startInquirer();
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+// //TODO: define this and add it to all methods
+// function startAgain() {
+//   inquirer
+//   .prompt ({
+//     type: 'confirm',
+//     message: 'Start Over?',
+//     name: 'startAgain'
+//     });
+// };

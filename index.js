@@ -3,7 +3,6 @@ const startInquirer = require('./startInquirer');
 const db = require('mysql2');
 
 
-
 // //TODO: group these and split them up.
 inquirer
     .prompt([
@@ -70,6 +69,7 @@ const desiredAction = {
     viewAllDepartments: function() {
         db.query('SELECT * FROM department', function (err, results) {
             console.log(results);
+            startInquirer();
         });
     },
     viewAllRoles: function() {
