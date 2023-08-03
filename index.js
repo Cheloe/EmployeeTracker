@@ -1,137 +1,273 @@
+const fs = require('fs');
 const inquirer = require('inquirer');
-const startInquirer = require('./startInquirer');
-const db = require('mysql2');
+const table = require('console.table');
+const mysql = require('mysql2');
 
+//set connection to database
+const db = mysql.createConnection({
+    host: 'localhost',
+    // MySQL Username
+    user: 'root',
+    password: '',
+    database: 'employeeTracker_db'
+},
+    console.log(`Connected to the employeeTracker_db database.`)
+);
 
-// //TODO: group these and split them up.
-inquirer
-    .prompt([
-        {
-            type: 'input',
-            message: 'New department name',
-            name: 'newDepartmentName'
-        },
-        {
-            type: 'input',
-            message: 'What is the name of the new role?',
-            name: 'newRoleName'
-        },
-        {
-            type: 'input',
-            message: 'What is the salary for the new role?',
-            name: 'newRoleSalary'
-        },
+//checking the established connection
+db.connect(err => {
+    if (err) throw err;
+    console.log(`------------------------------------`);
+    console.log(`          Employee Tracker          `);
+    console.log(`------------------------------------`);
+    inqPrompts();
+});
+
+//prompt questions
+function inqPrompts() {
+    inquirer.prompt([
         {
             type: 'list',
-            message: 'Which department does the new role belong to?',
-            choices: ['Sales', 'Engineering', 'Finance', 'Legal'],
-        },
-        {
-            type: 'input',
-            message: 'Employee name (first, last)',
-            name: 'newEmployeeName'
-        },
-        {
-            type: 'list',
-            message: 'Choose employee role:',
-            choices: ['Sales Lead', 'Salesperson', 'Lead Engineer', 'Software Engineer', 'Account Manager', 'Accountant', 'Legal Team Lead', 'Lawyer'],
-            name: 'newEmployeeRole'
-        },
-        {
-            type: 'input',
-            message: 'New employee salary:',
-            name: 'newEmployeeSalary'
-        },
-        {
-            type: 'input',
-            message: 'New employee manager: (first, last)',
-            name: 'newEmployeeManager'
-        },
-        {
-            type: 'list',
-            message: 'Choose an employee to update:',
-            choices: ['John Doe', 'Mike Chan', 'Ashley Rodriguez', 'Kevin Tupik', 'Malia Brown', 'Sarah Lourd', 'Tom Allen', 'Sammy Smith'],
-            name: 'employeeToUpdate'
-        },
-        {
-            type: 'list',
-            message: 'Choose a new role for the employee:',
-            choices: ['Sales Lead', 'Salesperson', 'Lead Engineer', 'Software Engineer', 'Account Manager', 'Accountant', 'Legal Team Lead', 'Lawyer'],
-            name: 'newRole'
+            name: `userChoice`,
+            message: `what would you like to do?`,
+            choices: [
+                "View all Departments",
+                "View all Roles",
+                "View all Employees",
+                "Add a Department",
+                "Add a Role",
+                "Add an Employee",
+                "Update an Employee Role",
+                "Update Employee Manager",
+                "View Employees By Manager",
+                "View Employees by Department",
+                "View total utilized budget of a Department",
+                "Delete a Department",
+                "Delete a Role",
+                "Delete a Employee",
+                "EXIT"
+            ]
         }
     ])
-    .then((response) => {
-     console.log(response);
-    })
-
-
-const desiredAction = {  
-    viewAllDepartments: function() {
-        db.query('SELECT * FROM department', function (err, results) {
-            console.log(results);
-            startInquirer();
+        .then((res) => {
+            console.log(res.userChoice);
+            switch (res.userChoice) {
+                case "View all Departments":
+                    viewAllDepartments();
+                    break;
+                case "View all Roles":
+                    viewAllRoles();
+                    break;
+                case "View all Employees":
+                    viewAllEmployees();
+                    break;
+                case "Add a Department":
+                    addDepartment();
+                    break;
+                case "Add a Role":
+                    addRole();
+                    break;
+                case "Add an Employee":
+                    addEmployee();
+                    break;
+                case "Update an Employee Role":
+                    updateEmployeeRole();
+                    break;
+                case "Update Employee Manager":
+                    updateEmployeeManager();
+                    break;
+                case "View Employees By Manager":
+                    ViewEmployeesByManager();
+                    break;
+                case "View Employees by Department":
+                    ViewEmployeesByDepartment();
+                    break;
+                case "View total utilized budget of a Department":
+                    ViewBudgetByDepartment();
+                    break;
+                case "Delete a Department":
+                    removeDepartment();
+                    break;
+                case "Delete a Role":
+                    removeRole();
+                    break;
+                case "Delete a Employee":
+                    removeEmployee();
+                    break;
+                case "EXIT":
+                    db.end();
+                    break;
+                default:
+                    console.log("Error has occured");
+                    db.end();
+                    break;
+            }
+        }).catch((err) => {
+            if (err) throw err;
         });
-    },
-    viewAllRoles: function() {
-        db.query('SELECT * FROM role', function (err, results) {
-            console.log(results);
-        });
-    },
-    viewAllEmployees: function() {
-        db.query('SELECT * FROM employee', function (err, results) {
-            console.log(results);
-        });
-    },
-    addDepartment: function() {
-        db.query('INSERT INTO department (name) VALUES (?)', response.newDepartmentName, function (err, results) {
-            console.log(results);
-        });
-    },
-    addRole: function() {
-        db.query('INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)', [response.newRoleName, response.newRoleSalary, response.newRoleDepartment], function (err, results) {
-            console.log(results);
-        });
-    },
-    addEmployee: function() {
-        db.query('INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [response.newEmployeeName, response.newEmployeeRole, response.newEmployeeSalary, response.newEmployeeManager], function (err, results) {
-            console.log(results);
-        });
-    },
-    updateEmployeeRole: function() {
-        db.query('UPDATE employee SET role_id = ? WHERE id = ?', [response.newRole, response.employeeToUpdate], function (err, results) {
-            console.log(results);
-        });
-    }
-}
+};
 
+//View Department
+function viewAllDepartments() {
+    //select from db
+    db.query("select * from departments;", (err, res) => {
+        if (err) throw err;
+        console.table("All departments: ", res);
+        inqPrompts();
+    });
+};
 
+//View All Roles
+function viewAllRoles() {
+    //select from db
+    db.query('SELECT * FROM roles',
+        (err, res) => {
+            if (err) throw err;
+            console.table("All Roles: ", res);
+            inqPrompts();
+        });
+};
 
-// // here's what I need to do to make this work on the js side:
-// // 1. Display the view all employees table in the console. This table will show the employee's id, first name, last name, title, department, salary, and manager
-// // 2. create a switch statement that will run the appropriate function based on the user's first inquirer response
-//         //a. if for instance the user chooses to view all departments, the switch statement will run the view all departments function
-//         //b. the view all departments function will query the database, return all departments, and display them in the console as a table, then return to the main menu
-//         // b. create a function view all departments that will query the database and return all departments
-//         // c. create a function view all roles that will query the database and return all roles
-//         // d. create a function view all employees that will query the database and return all employees
-// // 3. create a function add a department that will query the database and add a department, then verify that the department was added, display the departments table and return to the main menu
-// // 4. create a function add a role that will query the database and add a role, then verify that the role was added, display the roles table and return to the main menu
-// //5. create a function add an employee that will query the database and add an employee, then verify that the employee was added, display the employees table and return to the main menu
-// // 6. create a function update an employee role that will query the database, provide a list of employees to choose from in Inquirer, then update the employee's role, verify that the role was updated, display the employees table and return to the main menu
+//View All Employee
+function viewAllEmployees() {
+    //select from db
+    const employeeQuery = `
+SELECT e.id, e.employee_name, r.role_name, d.department_name, m.employee_name AS manager_name
+FROM employees e
+JOIN roles r ON e.role_id = r.id
+JOIN departments d ON e.department_id = d.id
+LEFT JOIN employees m ON e.manager_id = m.id
+LEFT JOIN employees mm ON m.manager_id = mm.id;
+    
+`;
+    db.query(employeeQuery, (err, res) => {
+        if (err) throw err;
+        console.table("All Employees : ", res);
+        inqPrompts();
+    });
+};
 
+//Add a new department
+function addDepartment() {
+    inquirer.prompt([
+        {
+            type: "input",
+            message: "please enter department name: ",
+            name: "department_name",
+            validate: nameInput => {
+              if (nameInput) {
+                  return true;
+              } else {
+                  console.log('please enter department name!');
+                  return false;
+              }
+            }
+        },
+    ]).then((res) => {
+        console.log(res);
+        db.query("INSERT INTO departments SET ?",
+            {
+                department_name: res.department_name,
+            },
+            (err) => {
+                if (err) throw err;
+            });
+        console.log("Successfully Added New Department! = " + res.department_name);
+        console.log("");
+        viewAllDepartments();
+    });
+};
 
-// // here's what I need to do to make this work on the sql side:
-// // 1. create a database called employee_tracker_db
-// // 2. create a table called departments with the following columns: id, name
-// // 3. create a table called roles with the following columns: id, title, salary, department_id
-// // 4. create a table called employees with the following columns: id, first_name, last_name, role_id, manager_id
-// // 5. create a table called managers with the following columns: id, first_name, last_name, department_id
-// // 6. create a seed.sql file that will seed the database with the following data:
-//     // a. departments: Sales, Engineering, Finance, Legal
-//     // b. roles: Sales Lead, Salesperson, Lead Engineer, Software Engineer, Account Manager, Accountant, Legal Team Lead, Lawyer
-//     // c. employees: John Doe, Mike Chan, Ashley Rodriguez, Kevin Tupik, Malia Brown, Sarah Lourd, Tom Allen, Sammy Smith
-//     // d. managers: Jillian Smith, Doug Fir, Steve Brown, Olivia Wilson, Phil Collins, Tony Danza, Uma Thurman, Quincy Jones
-// // 7. create a schema.sql file that will create the database and tables
-// // 8. join the tables so that the employee's role, department, manager, and salary are displayed in the employee table
-// // 9. join the tables so that the role's department is displayed in the role table
-// // 10. join the tables so that the manager's department is displayed in the manager table
+// Add New Role
+function addRole() {
+    db.query("SELECT * FROM departments;", (err, res) => {
+        if (err) throw err;
+        const pickDepartment = res.map((department) => {
+            return {
+                value: department.id,
+                name: department.name,
+            };
+        });
+        inquirer.prompt([
+            {
+                type: "input",
+                message: "Please enter a title for new role",
+                name: "role_title",
+                validate: titleInput => {
+                    if (titleInput) {
+                        return true;
+                    } else {
+                        console.log('please enter role title!');
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                message: "Please enter a salary for role",
+                name: "role_salary",
+                validate: salaryInput => {
+                    if (salaryInput) {
+                        return true;
+                    } else {
+                        console.log('please enter role salary!');
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "list",
+                message: "please select department for this role",
+                name: "departmentId",
+                choices: pickDepartment,
+            },
+        ])
+            .then((res) => {
+                db.query("INSERT INTO roles SET ?",
+                    {
+                        title: res.role_title,
+                        salary: res.role_salary,
+                        department_id: res.departmentId
+                    },
+                    (err) => {
+                        if (err) throw err;
+                    });
+                console.log("Successfully Added New Role! = " + res.role_title);
+                console.log("");
+                viewAllRoles();
+            });
+    });
+};
+
+//Delete Department
+function removeDepartment() {
+    db.query("SELECT * FROM departments", (err, res) => {
+        if (err) throw err;
+        const deleteDept = res.map((toDeleteDept) => {
+            return {
+                name: toDeleteDept.department_name,
+                value: toDeleteDept.id
+            }
+        });
+        console.log(deleteDept);
+        inquirer.prompt([
+            {
+                type: "list",
+                message: "Select a Department to Delete",
+                name: "delDept",
+                choices: deleteDept,
+            }
+        ])
+        .then((res) => {
+            const delDeptInfo = res.delDept;
+            db.query("DELETE FROM departments WHERE id = ?",
+                    delDeptInfo, (err) => {
+                    if (err) throw err;
+                    console.log("Successfully Deleted!");
+                    console.log("Deleted Department: " + delDeptInfo);
+                    console.log("");
+                    viewAllDepartments();
+                });
+        });
+    });
+};
